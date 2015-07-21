@@ -1,0 +1,9 @@
+About
+This is a Rust crate for parsing a "Standard MIDI file format"-file.
+I wrote this as an experiment trying to learn Rust.
+
+License
+Released under MIT License, please see the file LICENSE.
+
+Usage
+
