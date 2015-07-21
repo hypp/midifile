@@ -2,6 +2,8 @@ About
 This is a Rust crate for parsing a "Standard MIDI file format"-file.
 I wrote this as an experiment trying to learn Rust.
 
+Please feel free to report bugs and contribute in anyway you like.
+
 License
 Released under MIT License, please see the file LICENSE.
 
@@ -17,4 +19,8 @@ let midi_file = smf::read_file(&mut reader);
 ...
 
 
-
+And put this in your Cargo.toml:
+...
+[dependencies.midifile]
+git = "https://github.com/hypp/midifile"
+...
