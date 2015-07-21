@@ -31,6 +31,10 @@ pub struct MIDIFile {
 	pub tracks: Vec<Track>
 }
 
+/// 
+/// Try to read and parse "Standard MIDI file format"-file
+/// from the supplied reader
+///
 pub fn read_file(reader: &mut Read) -> MIDIFile {
 
 	let file_header = read_file_header(reader);
