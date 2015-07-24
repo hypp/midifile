@@ -15,7 +15,7 @@ extern crate midifile;
 use midifile::smf;
 ...
 let mut reader = BufReader::new(&file);
-let midi_file = smf::read_file(&mut reader);
+let midi_file = smf::read_file(&mut reader).unwrap();
 ...
 
 

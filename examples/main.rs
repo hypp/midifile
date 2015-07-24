@@ -19,7 +19,7 @@ fn main() {
 		};
 		
 		let mut reader = BufReader::new(&file);
-		let midi_file = smf::read_file(&mut reader);
+		let midi_file = smf::read_file(&mut reader).unwrap();
 
 		println!("File header: {:?}",midi_file.header);
 		for track in midi_file.tracks {

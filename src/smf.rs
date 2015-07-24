@@ -1,8 +1,21 @@
 
 use std::io::Read;
+use std::io;
 
 use utils;
 use events;
+
+#[derive(Debug)]
+pub enum SMFError {
+	Io(io::Error),
+	Parse(String)
+}
+
+impl From<io::Error> for SMFError {
+    fn from(err: io::Error) -> SMFError {
+        SMFError::Io(err)
+    }
+}
 
 #[derive(Debug)]
 pub struct FileHeader {
@@ -35,63 +48,57 @@ pub struct MIDIFile {
 /// Try to read and parse "Standard MIDI file format"-file
 /// from the supplied reader
 ///
-pub fn read_file(reader: &mut Read) -> MIDIFile {
+pub fn read_file(reader: &mut Read) -> Result<MIDIFile, SMFError> {
 
-	let file_header = read_file_header(reader);
+	let file_header = try!(read_file_header(reader));
 
 	let mut tracks:Vec<Track> = Vec::new();
 	
 	for _ in 1..file_header.num_tracks+1 {
-		let track_header = read_track_header(reader);
+		let track_header = try!(read_track_header(reader));
 		
-		let mut track = utils::read_vector(reader, track_header.length);
+		let mut track = try!(utils::read_vector(reader, track_header.length));
 		let event_list = parse_events(&mut track);
 		
 		let parsed_track = Track{header: track_header, events: event_list};
 		tracks.push(parsed_track);
 	}
 	
-	MIDIFile{header: file_header, tracks: tracks}
+	Ok(MIDIFile{header: file_header, tracks: tracks})
 }
 
-fn read_file_header(reader: &mut Read) -> FileHeader {
+fn read_file_header(reader: &mut Read) -> Result<FileHeader, SMFError> {
 	let mut magic = [0u8; 4];
-	match reader.read(&mut magic) {
-		Ok(num_read) if num_read == magic.len() => (),
-		_ => panic!("Failed to read bytes")
-	}
+	try!(utils::read_all(reader, &mut magic));
 
 	if magic != ['M' as u8, 'T' as u8, 'h' as u8, 'd' as u8] {
-		panic!("Not a MIDI header");
+		return Err(SMFError::Parse(format!("Not a MIDI header '{:?}'", magic)));
 	}
 	
-	let length = utils::read_big_endian_u32(reader);
+	let length = try!(utils::read_big_endian_u32(reader));
 	if length != 6 {
-		panic!("Wrong header size");
+		return Err(SMFError::Parse(format!("Wrong header size '{:?}'", length)));
 	}
-	let format = utils::read_big_endian_u16(reader);
-	let num_tracks = utils::read_big_endian_u16(reader);
-	let division = utils::read_big_endian_u16(reader);
+	let format = try!(utils::read_big_endian_u16(reader));
+	let num_tracks = try!(utils::read_big_endian_u16(reader));
+	let division = try!(utils::read_big_endian_u16(reader));
 
 	let header = FileHeader{magic: magic, length: length, format: format, num_tracks: num_tracks, division: division};
-	header
+	Ok(header)
 }
 
-fn read_track_header(reader: &mut Read) -> TrackHeader {
+fn read_track_header(reader: &mut Read) -> Result<TrackHeader, SMFError> {
 	let mut magic = [0u8; 4];
-	match reader.read(&mut magic) {
-		Ok(num_read) if num_read == magic.len() => (),
-		_ => panic!("Failed to read bytes")
-	}
+	try!(utils::read_all(reader, &mut magic));
 
 	if magic != ['M' as u8, 'T' as u8, 'r' as u8, 'k' as u8] {
-		panic!("Not a MIDI track header");
+		return Err(SMFError::Parse(format!("Not a MIDI track header '{:?}'", magic)));
 	}
 	
-	let length = utils::read_big_endian_u32(reader);
+	let length = try!(utils::read_big_endian_u32(reader));
 
 	let header = TrackHeader{magic: magic, length: length};
-	header
+	Ok(header)
 }
 
 fn pop_variable_len(track: &mut Vec<u8>) -> u32 {
